@@ -9,54 +9,65 @@ import (
 
 // Constants for the game board
 const (
-	BoardWidth  = 10 // Number of columns
-	BoardHeight = 20 // Number of rows
-	CellSize    = 24 // Size of each cell in pixels
+	BoardWidth      = 10                     // Number of columns
+	BoardHeight     = 20                     // Number of rows
+	CellSize        = 24                     // Size of each cell in pixels
+	MoveInterval    = 150 * time.Millisecond // Delay between left/right movements
+	GravityInterval = 1 * time.Second        // Delay for automatic falling
 )
 
 // Game represents the Tetris game state.
 type Game struct {
 	currentTetromino *Tetromino
-	board            [][]bool  // Stores landed Tetrominoes
+	board            [][]bool
 	lastFallTime     time.Time // Last time the Tetromino fell
+	lastMoveTime     time.Time // Last time Tetromino moved left/right
 }
 
-// NewTetrisGame initializes a new Tetris game instance.
+// NewTetrisGame initializes and returns a new Tetris game instance.
 func NewTetrisGame() *Game {
-	// Initialize board as empty
 	board := make([][]bool, BoardHeight)
 	for i := range board {
 		board[i] = make([]bool, BoardWidth)
 	}
 
 	return &Game{
-		currentTetromino: NewTetromino(), // Spawn a random Tetromino
+		currentTetromino: NewTetromino(),
 		board:            board,
 		lastFallTime:     time.Now(),
+		lastMoveTime:     time.Now(),
 	}
 }
 
 // Update handles game logic, including automatic falling and player input.
 func (g *Game) Update() error {
-	// Handle player movement
-	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
-		g.currentTetromino.Move(-1, 0, g.board)
+	currentTime := time.Now()
+
+	// Handle left/right movement with delay
+	if currentTime.Sub(g.lastMoveTime) > MoveInterval {
+		if ebiten.IsKeyPressed(ebiten.KeyLeft) {
+			g.currentTetromino.Move(-1, 0, g.board)
+			g.lastMoveTime = currentTime
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyRight) {
+			g.currentTetromino.Move(1, 0, g.board)
+			g.lastMoveTime = currentTime
+		}
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyRight) {
-		g.currentTetromino.Move(1, 0, g.board)
-	}
+
+	// Soft drop (manual down movement)
 	if ebiten.IsKeyPressed(ebiten.KeyDown) {
 		if !g.currentTetromino.Move(0, 1, g.board) {
-			g.lockTetromino() // Store the Tetromino in the board and spawn a new one
+			g.lockTetromino()
 		}
 	}
 
 	// Automatic falling (Gravity)
-	if time.Since(g.lastFallTime) > time.Second {
+	if currentTime.Sub(g.lastFallTime) > GravityInterval {
 		if !g.currentTetromino.Move(0, 1, g.board) {
-			g.lockTetromino() // Store the Tetromino in the board and spawn a new one
+			g.lockTetromino()
 		}
-		g.lastFallTime = time.Now()
+		g.lastFallTime = currentTime
 	}
 
 	return nil
