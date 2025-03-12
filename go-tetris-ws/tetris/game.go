@@ -82,6 +82,7 @@ func (g *Game) lockTetromino() {
 		}
 	}
 
+	g.clearFullRows()     // Clear full rows after locking a Tetromino
 	g.spawnNewTetromino() // Spawn a new Tetromino
 }
 
@@ -121,4 +122,32 @@ func (g *Game) Draw(screen *ebiten.Image) {
 // Layout sets the screen size for the game.
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return BoardWidth * CellSize, BoardHeight * CellSize
+}
+
+// clearFullRows removes full rows and shifts everything down.
+func (g *Game) clearFullRows() {
+	newBoard := make([][]bool, BoardHeight)
+	for i := range newBoard {
+		newBoard[i] = make([]bool, BoardWidth)
+	}
+
+	rowIndex := BoardHeight - 1 // Start from the bottom row
+
+	// Copy only non-full rows to the new board
+	for y := BoardHeight - 1; y >= 0; y-- {
+		isFull := true
+		for x := 0; x < BoardWidth; x++ {
+			if !g.board[y][x] {
+				isFull = false
+				break
+			}
+		}
+
+		if !isFull { // Keep non-full rows
+			newBoard[rowIndex] = g.board[y]
+			rowIndex--
+		}
+	}
+
+	g.board = newBoard // Replace old board with the new one
 }
