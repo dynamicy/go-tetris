@@ -54,11 +54,23 @@ func (t *Tetromino) Draw(screen *ebiten.Image) {
 	}
 }
 
-// Move updates the Tetromino's position but prevents it from moving into occupied spaces.
-func (t *Tetromino) Move(dx, dy int) bool {
-	if t.y+dy >= BoardHeight {
-		return false // Prevent moving below the board
+// Move updates the Tetromino's position but prevents it from colliding with landed blocks.
+func (t *Tetromino) Move(dx, dy int, board [][]bool) bool {
+	for _, pos := range TetrominoShapes[t.shape] {
+		newX, newY := t.x+pos[0]+dx, t.y+pos[1]+dy
+
+		// Check if moving out of bounds
+		if newX < 0 || newX >= BoardWidth || newY >= BoardHeight {
+			return false // Collision detected
+		}
+
+		// Check if moving into an occupied cell
+		if newY >= 0 && board[newY][newX] {
+			return false // Collision with landed block
+		}
 	}
+
+	// Move is valid
 	t.x += dx
 	t.y += dy
 	return true

@@ -39,24 +39,24 @@ func NewTetrisGame() *Game {
 // Update handles game logic, including automatic falling and player input.
 func (g *Game) Update() error {
 	// Handle player movement
-	if ebiten.IsKeyPressed(ebiten.KeyLeft) && g.canMove(-1, 0) {
-		g.currentTetromino.Move(-1, 0)
+	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
+		g.currentTetromino.Move(-1, 0, g.board)
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyRight) && g.canMove(1, 0) {
-		g.currentTetromino.Move(1, 0)
+	if ebiten.IsKeyPressed(ebiten.KeyRight) {
+		g.currentTetromino.Move(1, 0, g.board)
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyDown) {
-		if !g.currentTetromino.Move(0, 1) {
+		if !g.currentTetromino.Move(0, 1, g.board) {
 			g.lockTetromino() // Store the Tetromino in the board and spawn a new one
 		}
 	}
 
 	// Automatic falling (Gravity)
-	if time.Since(g.lastFallTime) > time.Second { // 1-second interval
-		if !g.currentTetromino.Move(0, 1) {
+	if time.Since(g.lastFallTime) > time.Second {
+		if !g.currentTetromino.Move(0, 1, g.board) {
 			g.lockTetromino() // Store the Tetromino in the board and spawn a new one
 		}
-		g.lastFallTime = time.Now() // Reset timer
+		g.lastFallTime = time.Now()
 	}
 
 	return nil
