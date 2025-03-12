@@ -1,10 +1,12 @@
 package tetris
 
 import (
+	"fmt"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text"
+	"golang.org/x/image/font/basicfont"
 	"image/color"
 	"time"
-
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // Constants for the game board
@@ -20,8 +22,10 @@ const (
 type Game struct {
 	currentTetromino *Tetromino
 	board            [][]bool
-	lastFallTime     time.Time // Last time the Tetromino fell
-	lastMoveTime     time.Time // Last time Tetromino moved left/right
+	lastFallTime     time.Time
+	lastMoveTime     time.Time
+	score            int  // Player's score
+	gameOver         bool // Game over state
 }
 
 // NewTetrisGame initializes and returns a new Tetris game instance.
@@ -97,7 +101,7 @@ func (g *Game) lockTetromino() {
 	g.spawnNewTetromino() // Spawn a new Tetromino
 }
 
-// spawnNewTetromino creates a new random Tetromino and checks for game over.
+// spawnNewTetromino creates a new Tetromino and checks for game over.
 func (g *Game) spawnNewTetromino() {
 	newTetromino := NewTetromino()
 
@@ -105,7 +109,7 @@ func (g *Game) spawnNewTetromino() {
 	for _, pos := range TetrominoShapes[newTetromino.shape] {
 		x, y := newTetromino.x+pos[0], newTetromino.y+pos[1]
 		if y >= 0 && g.board[y][x] {
-			// TODO: Implement Game Over handling
+			g.gameOver = true
 			return
 		}
 	}
@@ -113,13 +117,13 @@ func (g *Game) spawnNewTetromino() {
 	g.currentTetromino = newTetromino
 }
 
-// Draw renders the game screen.
+// Draw renders the game screen, including the score and game over message.
 func (g *Game) Draw(screen *ebiten.Image) {
 	// Draw landed blocks
 	for y, row := range g.board {
 		for x, occupied := range row {
 			if occupied {
-				drawCell(screen, x, y, color.RGBA{255, 255, 255, 255}) // White blocks for landed Tetrominoes
+				drawCell(screen, x, y, color.RGBA{255, 255, 255, 255}) // White blocks
 			}
 		}
 	}
@@ -128,14 +132,18 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	if g.currentTetromino != nil {
 		g.currentTetromino.Draw(screen)
 	}
+
+	// Display Score
+	scoreText := fmt.Sprintf("Score: %d", g.score)
+	text.Draw(screen, scoreText, basicfont.Face7x13, 10, 20, color.White)
+
+	// Display Game Over Message
+	if g.gameOver {
+		text.Draw(screen, "GAME OVER", basicfont.Face7x13, 100, 200, color.RGBA{255, 0, 0, 255})
+	}
 }
 
-// Layout sets the screen size for the game.
-func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return BoardWidth * CellSize, BoardHeight * CellSize
-}
-
-// clearFullRows removes full rows and shifts everything down.
+// clearFullRows removes full rows, shifts everything down, and updates the score.
 func (g *Game) clearFullRows() {
 	newBoard := make([][]bool, BoardHeight)
 	for i := range newBoard {
@@ -143,6 +151,7 @@ func (g *Game) clearFullRows() {
 	}
 
 	rowIndex := BoardHeight - 1 // Start from the bottom row
+	rowsCleared := 0
 
 	// Copy only non-full rows to the new board
 	for y := BoardHeight - 1; y >= 0; y-- {
@@ -154,11 +163,34 @@ func (g *Game) clearFullRows() {
 			}
 		}
 
-		if !isFull { // Keep non-full rows
+		if isFull {
+			rowsCleared++
+		} else {
 			newBoard[rowIndex] = g.board[y]
 			rowIndex--
 		}
 	}
 
 	g.board = newBoard // Replace old board with the new one
+
+	// Update score based on rows cleared
+	if rowsCleared > 0 {
+		g.updateScore(rowsCleared)
+	}
+}
+
+// updateScore increases the score based on the number of rows cleared.
+func (g *Game) updateScore(rowsCleared int) {
+	points := map[int]int{
+		1: 100, // Single row
+		2: 300, // Double row
+		3: 500, // Triple row
+		4: 800, // Tetris (4 rows)
+	}
+	g.score += points[rowsCleared]
+}
+
+// Layout sets the screen size for the game.
+func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
+	return BoardWidth * CellSize, BoardHeight * CellSize
 }
