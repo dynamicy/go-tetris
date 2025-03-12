@@ -24,8 +24,9 @@ type Game struct {
 	board            [][]bool
 	lastFallTime     time.Time
 	lastMoveTime     time.Time
-	score            int  // Player's score
-	gameOver         bool // Game over state
+	lastKeyState     map[ebiten.Key]bool // Track key states
+	score            int
+	gameOver         bool
 }
 
 // NewTetrisGame initializes and returns a new Tetris game instance.
@@ -40,12 +41,21 @@ func NewTetrisGame() *Game {
 		board:            board,
 		lastFallTime:     time.Now(),
 		lastMoveTime:     time.Now(),
+		lastKeyState:     make(map[ebiten.Key]bool), // Initialize key tracking
 	}
 }
 
-// Update handles game logic, including automatic falling and player input.
+// Update handles game logic, including movement and rotation.
 func (g *Game) Update() error {
 	currentTime := time.Now()
+
+	// Handle rotation (detect key press only once per press)
+	if g.isKeyJustPressed(ebiten.KeyZ) {
+		g.currentTetromino.RotateCounterClockwise(g.board)
+	}
+	if g.isKeyJustPressed(ebiten.KeyX) {
+		g.currentTetromino.RotateClockwise(g.board)
+	}
 
 	// Handle left/right movement with delay
 	if currentTime.Sub(g.lastMoveTime) > MoveInterval {
@@ -90,15 +100,15 @@ func (g *Game) canMove(dx, dy int) bool {
 
 // lockTetromino places the landed Tetromino onto the board and spawns a new one.
 func (g *Game) lockTetromino() {
-	for _, pos := range TetrominoShapes[g.currentTetromino.shape] {
+	for _, pos := range TetrominoRotations[g.currentTetromino.shape][g.currentTetromino.rotationState] {
 		x, y := g.currentTetromino.x+pos[0], g.currentTetromino.y+pos[1]
 		if y >= 0 && y < BoardHeight && x >= 0 && x < BoardWidth {
-			g.board[y][x] = true // Mark the grid as occupied
+			g.board[y][x] = true // Correctly mark occupied blocks
 		}
 	}
 
-	g.clearFullRows()     // Clear full rows after locking a Tetromino
-	g.spawnNewTetromino() // Spawn a new Tetromino
+	g.clearFullRows()     // Clear full rows
+	g.spawnNewTetromino() // Spawn a new Tetromino at the top
 }
 
 // spawnNewTetromino creates a new Tetromino and checks for game over.
@@ -193,4 +203,15 @@ func (g *Game) updateScore(rowsCleared int) {
 // Layout sets the screen size for the game.
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return BoardWidth * CellSize, BoardHeight * CellSize
+}
+
+// isKeyJustPressed checks if a key was just pressed (prevents holding).
+func (g *Game) isKeyJustPressed(key ebiten.Key) bool {
+	pressed := ebiten.IsKeyPressed(key)
+	if pressed && !g.lastKeyState[key] {
+		g.lastKeyState[key] = true
+		return true
+	}
+	g.lastKeyState[key] = pressed
+	return false
 }

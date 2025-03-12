@@ -1,11 +1,50 @@
 package tetris
 
 import (
+	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"image/color"
 	"math/rand"
-	"time"
 )
+
+// Define possible rotations for each Tetromino type
+var TetrominoRotations = map[string][][][]int{
+	"T": {
+		{{-1, 0}, {0, 0}, {1, 0}, {0, -1}}, // Default
+		{{0, -1}, {0, 0}, {0, 1}, {1, 0}},  // 90°
+		{{-1, 0}, {0, 0}, {1, 0}, {0, 1}},  // 180°
+		{{0, -1}, {0, 0}, {0, 1}, {-1, 0}}, // 270°
+	},
+	"L": {
+		{{-1, 0}, {0, 0}, {1, 0}, {1, -1}},  // Default
+		{{0, -1}, {0, 0}, {0, 1}, {1, 1}},   // 90°
+		{{-1, 1}, {-1, 0}, {0, 0}, {1, 0}},  // 180°
+		{{-1, -1}, {0, -1}, {0, 0}, {0, 1}}, // 270°
+	},
+	"J": {
+		{{-1, 0}, {0, 0}, {1, 0}, {-1, -1}}, // Default
+		{{-1, -1}, {0, -1}, {0, 0}, {0, 1}}, // 90°
+		{{1, 1}, {-1, 0}, {0, 0}, {1, 0}},   // 180°
+		{{-1, 1}, {0, 1}, {0, 0}, {0, -1}},  // 270°
+	},
+	"I": {
+		{{-2, 0}, {-1, 0}, {0, 0}, {1, 0}}, // Default (Horizontal)
+		{{0, -1}, {0, 0}, {0, 1}, {0, 2}},  // 90° (Vertical)
+		{{-2, 0}, {-1, 0}, {0, 0}, {1, 0}}, // 180° (Horizontal)
+		{{0, -1}, {0, 0}, {0, 1}, {0, 2}},  // 270° (Vertical)
+	},
+	"O": {
+		{{0, 0}, {1, 0}, {0, 1}, {1, 1}}, // Square block (No rotation)
+	},
+	"S": {
+		{{-1, 0}, {0, 0}, {0, 1}, {1, 1}},
+		{{0, -1}, {0, 0}, {-1, 0}, {-1, 1}},
+	},
+	"Z": {
+		{{-1, 1}, {0, 1}, {0, 0}, {1, 0}},
+		{{0, -1}, {0, 0}, {1, 0}, {1, 1}},
+	},
+}
 
 // TetrominoShapes defines the structure of different Tetromino pieces.
 var TetrominoShapes = map[string][][]int{
@@ -20,20 +59,21 @@ var TetrominoShapes = map[string][][]int{
 
 // Tetromino represents a falling piece in the Tetris game.
 type Tetromino struct {
-	shape string // The type of Tetromino (T, L, Z, etc.)
-	x, y  int    // The Tetromino's position on the grid
+	shape         string // The type of Tetromino (T, L, Z, etc.)
+	x, y          int    // The Tetromino's position on the grid
+	rotationState int    // Current rotation state
 }
 
-// NewTetromino creates and returns a new Tetromino of a random shape.
+// NewTetromino creates a new Tetromino with a random shape.
 func NewTetromino() *Tetromino {
-	rand.Seed(time.Now().UnixNano()) // Ensure different random shapes per run
-	shapes := []string{"T", "L", "J", "I", "O", "S", "Z"}
-	randomShape := shapes[rand.Intn(len(shapes))]
+	shapes := []string{"T", "L", "J", "I", "O", "S", "Z"} // All possible shapes
+	randomShape := shapes[rand.Intn(len(shapes))]         // Pick a random shape
 
 	return &Tetromino{
-		shape: randomShape,
-		x:     BoardWidth / 2, // Spawn in the center
-		y:     0,              // Start at the top
+		shape:         randomShape,
+		x:             BoardWidth / 2,
+		y:             0,
+		rotationState: 0, // Default rotation state
 	}
 }
 
@@ -47,31 +87,69 @@ func drawCell(screen *ebiten.Image, x, y int, col color.Color) {
 	screen.DrawImage(cell, op)
 }
 
-// Draw renders the Tetromino on the game screen.
+// Draw renders the Tetromino correctly after rotation.
 func (t *Tetromino) Draw(screen *ebiten.Image) {
-	for _, pos := range TetrominoShapes[t.shape] {
+	for _, pos := range TetrominoRotations[t.shape][t.rotationState] {
 		drawCell(screen, t.x+pos[0], t.y+pos[1], color.RGBA{0, 255, 0, 255}) // Green block
 	}
 }
 
-// Move updates the Tetromino's position but prevents it from colliding with landed blocks.
+// Move attempts to move the Tetromino by (dx, dy). Returns false if movement is blocked.
 func (t *Tetromino) Move(dx, dy int, board [][]bool) bool {
-	for _, pos := range TetrominoShapes[t.shape] {
+	for _, pos := range TetrominoRotations[t.shape][t.rotationState] {
 		newX, newY := t.x+pos[0]+dx, t.y+pos[1]+dy
 
-		// Check if moving out of bounds
+		// Check if new position is out of bounds
 		if newX < 0 || newX >= BoardWidth || newY >= BoardHeight {
-			return false // Collision detected
+			return false // Block movement if it exceeds board limits
 		}
 
-		// Check if moving into an occupied cell
+		// Check collision with landed Tetrominoes
 		if newY >= 0 && board[newY][newX] {
-			return false // Collision with landed block
+			return false
 		}
 	}
 
-	// Move is valid
+	// Move Tetromino only if it's valid
 	t.x += dx
 	t.y += dy
+	return true
+}
+
+// RotateClockwise rotates the Tetromino in the clockwise direction.
+func (t *Tetromino) RotateClockwise(board [][]bool) {
+	//newState := (t.rotationState + 1) % len(TetrominoRotations[t.shape])
+	//if t.canRotate(newState, board) {
+	//	t.rotationState = newState
+	//}
+	newState := (t.rotationState + 1) % len(TetrominoRotations[t.shape])
+
+	if t.canRotate(newState, board) {
+		t.rotationState = newState
+		fmt.Println("CW Rotation Successful! New Shape Positions:")
+		for _, pos := range TetrominoRotations[t.shape][newState] {
+			fmt.Println("Block at:", t.x+pos[0], t.y+pos[1])
+		}
+	} else {
+		fmt.Println("CW Rotation Blocked!")
+	}
+}
+
+// RotateCounterClockwise rotates the Tetromino counterclockwise.
+func (t *Tetromino) RotateCounterClockwise(board [][]bool) {
+	newState := (t.rotationState - 1 + len(TetrominoRotations[t.shape])) % len(TetrominoRotations[t.shape])
+	if t.canRotate(newState, board) {
+		t.rotationState = newState
+	}
+}
+
+// canRotate checks if the Tetromino can rotate to a new state without colliding.
+func (t *Tetromino) canRotate(newState int, board [][]bool) bool {
+	for _, pos := range TetrominoRotations[t.shape][newState] {
+		x, y := t.x+pos[0], t.y+pos[1]
+		if x < 0 || x >= BoardWidth || y >= BoardHeight || (y >= 0 && board[y][x]) {
+			return false // Collision detected
+		}
+	}
 	return true
 }
