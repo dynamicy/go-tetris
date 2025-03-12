@@ -1,52 +1,124 @@
 package tetris
 
 import (
-	"github.com/hajimehoshi/ebiten/v2"
+	"image/color"
 	"time"
+
+	"github.com/hajimehoshi/ebiten/v2"
+)
+
+// Constants for the game board
+const (
+	BoardWidth  = 10 // Number of columns
+	BoardHeight = 20 // Number of rows
+	CellSize    = 24 // Size of each cell in pixels
 )
 
 // Game represents the Tetris game state.
 type Game struct {
 	currentTetromino *Tetromino
+	board            [][]bool  // Stores landed Tetrominoes
 	lastFallTime     time.Time // Last time the Tetromino fell
 }
 
-// NewTetrisGame initializes a new Tetris game.
+// NewTetrisGame initializes a new Tetris game instance.
 func NewTetrisGame() *Game {
+	// Initialize board as empty
+	board := make([][]bool, BoardHeight)
+	for i := range board {
+		board[i] = make([]bool, BoardWidth)
+	}
+
 	return &Game{
-		currentTetromino: NewTetromino("T"), // Default Tetromino
-		lastFallTime:     time.Now(),        // Initialize timer
+		currentTetromino: NewTetromino(), // Spawn a random Tetromino
+		board:            board,
+		lastFallTime:     time.Now(),
 	}
 }
 
 // Update handles game logic, including automatic falling and player input.
 func (g *Game) Update() error {
 	// Handle player movement
-	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
+	if ebiten.IsKeyPressed(ebiten.KeyLeft) && g.canMove(-1, 0) {
 		g.currentTetromino.Move(-1, 0)
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyRight) {
+	if ebiten.IsKeyPressed(ebiten.KeyRight) && g.canMove(1, 0) {
 		g.currentTetromino.Move(1, 0)
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyDown) {
-		g.currentTetromino.Move(0, 1) // Soft drop
+		if !g.currentTetromino.Move(0, 1) {
+			g.lockTetromino() // Store the Tetromino in the board and spawn a new one
+		}
 	}
 
 	// Automatic falling (Gravity)
 	if time.Since(g.lastFallTime) > time.Second { // 1-second interval
-		g.currentTetromino.Move(0, 1) // Move down
-		g.lastFallTime = time.Now()   // Reset timer
+		if !g.currentTetromino.Move(0, 1) {
+			g.lockTetromino() // Store the Tetromino in the board and spawn a new one
+		}
+		g.lastFallTime = time.Now() // Reset timer
 	}
 
 	return nil
 }
 
-// Draw renders the game screen.
-func (g *Game) Draw(screen *ebiten.Image) {
-	g.currentTetromino.Draw(screen) // Draw the active Tetromino
+// canMove checks if the Tetromino can move without colliding with other blocks.
+func (g *Game) canMove(dx, dy int) bool {
+	for _, pos := range TetrominoShapes[g.currentTetromino.shape] {
+		x, y := g.currentTetromino.x+pos[0]+dx, g.currentTetromino.y+pos[1]+dy
+		if x < 0 || x >= BoardWidth || y >= BoardHeight || (y >= 0 && g.board[y][x]) {
+			return false // Collision detected
+		}
+	}
+	return true
 }
 
-// Layout sets the screen size.
+// lockTetromino places the landed Tetromino onto the board and spawns a new one.
+func (g *Game) lockTetromino() {
+	for _, pos := range TetrominoShapes[g.currentTetromino.shape] {
+		x, y := g.currentTetromino.x+pos[0], g.currentTetromino.y+pos[1]
+		if y >= 0 && y < BoardHeight && x >= 0 && x < BoardWidth {
+			g.board[y][x] = true // Mark the grid as occupied
+		}
+	}
+
+	g.spawnNewTetromino() // Spawn a new Tetromino
+}
+
+// spawnNewTetromino creates a new random Tetromino and checks for game over.
+func (g *Game) spawnNewTetromino() {
+	newTetromino := NewTetromino()
+
+	// Check if the new Tetromino collides immediately (Game Over)
+	for _, pos := range TetrominoShapes[newTetromino.shape] {
+		x, y := newTetromino.x+pos[0], newTetromino.y+pos[1]
+		if y >= 0 && g.board[y][x] {
+			// TODO: Implement Game Over handling
+			return
+		}
+	}
+
+	g.currentTetromino = newTetromino
+}
+
+// Draw renders the game screen.
+func (g *Game) Draw(screen *ebiten.Image) {
+	// Draw landed blocks
+	for y, row := range g.board {
+		for x, occupied := range row {
+			if occupied {
+				drawCell(screen, x, y, color.RGBA{255, 255, 255, 255}) // White blocks for landed Tetrominoes
+			}
+		}
+	}
+
+	// Draw active Tetromino
+	if g.currentTetromino != nil {
+		g.currentTetromino.Draw(screen)
+	}
+}
+
+// Layout sets the screen size for the game.
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return 320, 480
+	return BoardWidth * CellSize, BoardHeight * CellSize
 }
