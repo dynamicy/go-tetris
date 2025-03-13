@@ -2,7 +2,10 @@ module github.com/dynamicy/go-tetris-ws/go-tetris
 
 go 1.24.1
 
-require github.com/hajimehoshi/ebiten/v2 v2.8.6
+require (
+	github.com/hajimehoshi/ebiten/v2 v2.8.6
+	golang.org/x/image v0.23.0
+)
 
 require (
 	github.com/ebitengine/gomobile v0.0.0-20250209143333-6071a2a2351c // indirect
