@@ -26,13 +26,13 @@ jobs:
         run: |
           echo "Setting up Go workspace..."
           cd go-tetris-ws
-          go work sync
+          go work sync                
 
       - name: Verify go.mod and go.sum
         run: |
-          cd go-tetris-ws/tetris
+          cd go-tetris-ws/tetris        
           go mod tidy          
-          git diff --exit-code go.mod go.sum || (echo "go.mod/go.sum changed. Run 'go mod tidy' and commit the changes." && exit 1)
+          git diff --exit-code go.mod go.sum        
 
           cd ../tetris-main
           go mod tidy
