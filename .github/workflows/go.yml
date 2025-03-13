@@ -1,5 +1,4 @@
-# GitHub Actions workflow for go-tetris
-name: Go
+name: Go CI
 
 on:
   push:
@@ -21,23 +20,33 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24.1' # Updated to Go 1.24.1
+          go-version: '1.24.1'
+
+      - name: Set up Go Workspace
+        run: |
+          echo "Setting up Go workspace..."
+          cd go-tetris-ws
+          go work sync
 
       - name: Verify go.mod and go.sum
-        run: go mod tidy && git diff --exit-code go.mod go.sum
+        run: |
+          cd go-tetris-ws/tetris
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+
+          cd ../tetris-main
+          go mod tidy
+          git diff --exit-code go.mod go.sum
 
       - name: Run Linter
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
 
-      - name: Build
-        run: go build -v ./...    
+      - name: Build Project
+        run: |
+          cd go-tetris-ws/tetris
+          go build -v ./...
 
-  deploy:
-    if: github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to Production
-        run: echo "Deploying application..."
+          cd ../tetris-main
+          go build -v ./...
