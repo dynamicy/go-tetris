@@ -49,3 +49,13 @@ var TetrominoShapes = map[string][][]int{
 	"S": {{-1, 0}, {0, 0}, {0, 1}, {1, 1}},  // S-shape
 	"Z": {{-1, 1}, {0, 1}, {0, 0}, {1, 0}},  // Z-shape
 }
+
+// wallKickOffsets defines the wall kick tests for normal pieces and "I" piece.
+var wallKickOffsets = map[string][][]int{
+	"default": {
+		{0, 0}, {1, 0}, {-1, 0}, {0, -1}, {0, 1}, // Standard wall kicks
+	},
+	"I": {
+		{0, 0}, {2, 0}, {-2, 0}, {0, -1}, {0, 1}, // "I" uses different shifts
+	},
+}
