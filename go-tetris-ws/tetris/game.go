@@ -14,6 +14,7 @@ type Game struct {
 	lastKeyState     map[ebiten.Key]bool // Track key states
 	score            int
 	gameOver         bool
+	hardDropActive   bool // Track if Hard Drop is in progress
 }
 
 // NewTetrisGame initializes and returns a new Tetris game instance.
@@ -34,6 +35,11 @@ func NewTetrisGame() *Game {
 
 // Update handles game logic, including movement and rotation.
 func (g *Game) Update() error {
+	// **Prevent any input if the game is over**
+	if g.gameOver {
+		return nil
+	}
+
 	currentTime := time.Now()
 
 	// Handle rotation (detect key press only once per press)
@@ -54,6 +60,20 @@ func (g *Game) Update() error {
 			g.currentTetromino.Move(1, 0, g.board)
 			g.lastMoveTime = currentTime
 		}
+	}
+
+	// **Hard Drop (Instant Drop but waits for falling animation)**
+	if g.isKeyJustPressed(ebiten.KeySpace) {
+		g.hardDropActive = true
+	}
+
+	// If Hard Drop is active, force it to keep falling naturally
+	if g.hardDropActive {
+		if !g.currentTetromino.Move(0, 1, g.board) {
+			g.lockTetromino()        // Only lock when it fully reaches the bottom
+			g.hardDropActive = false // Reset Hard Drop state
+		}
+		return nil // Skip other updates while hard dropping
 	}
 
 	// Soft drop (manual down movement)

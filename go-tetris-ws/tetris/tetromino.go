@@ -103,3 +103,14 @@ func (t *Tetromino) wallKickTest(newState int, board [][]bool) (int, int, bool) 
 	}
 	return t.x, t.y, false // Rotation fails, stay in the same place
 }
+
+// HardDrop moves the Tetromino to the lowest valid position step by step.
+func (t *Tetromino) HardDrop(board [][]bool) {
+	for {
+		// Move one step down
+		if !t.Move(0, 1, board) {
+			break // Stop if movement is not possible
+		}
+	}
+}
+
