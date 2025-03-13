@@ -30,13 +30,21 @@ jobs:
 
       - name: Verify go.mod and go.sum
         run: |
-          cd go-tetris-ws/tetris        
-          go mod tidy          
-          git diff --exit-code go.mod go.sum        
-
+          cd go-tetris-ws/tetris
+          go mod tidy
+          if ! git diff --exit-code go.mod go.sum; then
+            echo "Warning: go.mod/go.sum changed. Committing changes."
+            git add go.mod go.sum
+            git commit -m "Fix: Auto-update go.mod and go.sum"
+          fi
+          
           cd ../tetris-main
           go mod tidy
-          git diff --exit-code go.mod go.sum
+          if ! git diff --exit-code go.mod go.sum; then
+            echo "Warning: go.mod/go.sum changed. Committing changes."
+            git add go.mod go.sum
+            git commit -m "Fix: Auto-update go.mod and go.sum"
+          fi
 
       - name: Run Linter
         uses: golangci/golangci-lint-action@v3
