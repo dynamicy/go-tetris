@@ -1,7 +1,6 @@
 package tetris
 
 import (
-	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"image/color"
 	"math/rand"
@@ -16,16 +15,16 @@ var TetrominoRotations = map[string][][][]int{
 		{{0, -1}, {0, 0}, {0, 1}, {-1, 0}}, // 270°
 	},
 	"L": {
-		{{-1, 0}, {0, 0}, {1, 0}, {1, -1}},  // Default
-		{{0, -1}, {0, 0}, {0, 1}, {1, 1}},   // 90°
-		{{-1, 1}, {-1, 0}, {0, 0}, {1, 0}},  // 180°
-		{{-1, -1}, {0, -1}, {0, 0}, {0, 1}}, // 270°
+		{{-1, 0}, {0, 0}, {1, 0}, {1, -1}},  // Default (L shape)
+		{{0, -1}, {0, 0}, {0, 1}, {1, 1}},   // 90° rotation (corrected)
+		{{-1, 1}, {-1, 0}, {0, 0}, {1, 0}},  // 180° rotation (corrected)
+		{{-1, -1}, {0, -1}, {0, 0}, {0, 1}}, // 270° rotation (corrected)
 	},
 	"J": {
-		{{-1, 0}, {0, 0}, {1, 0}, {-1, -1}}, // Default
-		{{-1, -1}, {0, -1}, {0, 0}, {0, 1}}, // 90°
-		{{1, 1}, {-1, 0}, {0, 0}, {1, 0}},   // 180°
-		{{-1, 1}, {0, 1}, {0, 0}, {0, -1}},  // 270°
+		{{-1, 0}, {0, 0}, {1, 0}, {-1, -1}}, // Default (J shape)
+		{{-1, -1}, {0, -1}, {0, 0}, {0, 1}}, // 90° rotation (corrected)
+		{{1, 1}, {-1, 0}, {0, 0}, {1, 0}},   // 180° rotation (corrected)
+		{{-1, 1}, {0, 1}, {0, 0}, {0, -1}},  // 270° rotation (corrected)
 	},
 	"I": {
 		{{-2, 0}, {-1, 0}, {0, 0}, {1, 0}}, // Default (Horizontal)
@@ -118,20 +117,10 @@ func (t *Tetromino) Move(dx, dy int, board [][]bool) bool {
 
 // RotateClockwise rotates the Tetromino in the clockwise direction.
 func (t *Tetromino) RotateClockwise(board [][]bool) {
-	//newState := (t.rotationState + 1) % len(TetrominoRotations[t.shape])
-	//if t.canRotate(newState, board) {
-	//	t.rotationState = newState
-	//}
 	newState := (t.rotationState + 1) % len(TetrominoRotations[t.shape])
 
 	if t.canRotate(newState, board) {
 		t.rotationState = newState
-		fmt.Println("CW Rotation Successful! New Shape Positions:")
-		for _, pos := range TetrominoRotations[t.shape][newState] {
-			fmt.Println("Block at:", t.x+pos[0], t.y+pos[1])
-		}
-	} else {
-		fmt.Println("CW Rotation Blocked!")
 	}
 }
 
