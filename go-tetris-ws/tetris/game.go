@@ -35,14 +35,24 @@ func NewTetrisGame() *Game {
 
 // Update handles game logic, including movement and rotation.
 func (g *Game) Update() error {
-	// **Prevent any input if the game is over**
 	if g.gameOver {
-		return nil
+		return nil // Prevent input if game is over
 	}
 
 	currentTime := time.Now()
 
-	// Handle rotation (detect key press only once per press)
+	// Handle player inputs
+	g.handleInput(currentTime)
+
+	// Process Tetromino movement
+	g.processMovement(currentTime)
+
+	return nil
+}
+
+// handleInput processes key presses for rotation, movement, and hard drop.
+func (g *Game) handleInput(currentTime time.Time) {
+	// Rotation (detect key press once per press)
 	if g.isKeyJustPressed(ebiten.KeyZ) {
 		g.currentTetromino.RotateCounterClockwise(g.board)
 	}
@@ -50,57 +60,59 @@ func (g *Game) Update() error {
 		g.currentTetromino.RotateClockwise(g.board)
 	}
 
-	// Handle left/right movement with delay
-	if currentTime.Sub(g.lastMoveTime) > MoveInterval {
-		if ebiten.IsKeyPressed(ebiten.KeyLeft) {
-			g.currentTetromino.Move(-1, 0, g.board)
-			g.lastMoveTime = currentTime
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyRight) {
-			g.currentTetromino.Move(1, 0, g.board)
-			g.lastMoveTime = currentTime
-		}
-	}
-
-	// **Hard Drop (Instant Drop but waits for falling animation)**
+	// Hard Drop (instant fall)
 	if g.isKeyJustPressed(ebiten.KeySpace) {
 		g.hardDropActive = true
 	}
+}
 
-	// If Hard Drop is active, force it to keep falling naturally
+// processMovement updates Tetromino position based on inputs and gravity.
+func (g *Game) processMovement(currentTime time.Time) {
 	if g.hardDropActive {
-		if !g.currentTetromino.Move(0, 1, g.board) {
-			g.lockTetromino()        // Only lock when it fully reaches the bottom
-			g.hardDropActive = false // Reset Hard Drop state
+		// Move downward until collision
+		for g.currentTetromino.Move(0, 1, g.board) {
 		}
-		return nil // Skip other updates while hard dropping
+		g.lockTetromino()
+		g.hardDropActive = false
+		return
 	}
 
-	// Soft drop (manual down movement)
-	if ebiten.IsKeyPressed(ebiten.KeyDown) {
-		if !g.currentTetromino.Move(0, 1, g.board) {
-			g.lockTetromino()
+	// Handle left/right movement with DAS (Delayed Auto Shift)
+	moveLeft := ebiten.IsKeyPressed(ebiten.KeyLeft)
+	moveRight := ebiten.IsKeyPressed(ebiten.KeyRight)
+
+	if moveLeft || moveRight {
+		if g.lastMoveTime.IsZero() || currentTime.Sub(g.lastMoveTime) > InitialMoveDelay {
+			if currentTime.Sub(g.lastMoveTime) > MoveRepeatRate {
+				if moveLeft {
+					g.currentTetromino.Move(-1, 0, g.board)
+				} else if moveRight {
+					g.currentTetromino.Move(1, 0, g.board)
+				}
+				g.lastMoveTime = currentTime
+			}
 		}
+	} else {
+		g.lastMoveTime = time.Time{} // Reset move timer if no key is pressed
 	}
 
-	// Automatic falling (Gravity)
-	if currentTime.Sub(g.lastFallTime) > GravityInterval {
+	// Handle downward movement (gravity and soft drop)
+	shouldLock := false
+	if ebiten.IsKeyPressed(ebiten.KeyDown) || currentTime.Sub(g.lastFallTime) > GravityInterval {
 		if !g.currentTetromino.Move(0, 1, g.board) {
-			g.lockTetromino()
+			shouldLock = true
 		}
 		g.lastFallTime = currentTime
 	}
 
-	return nil
+	if shouldLock {
+		g.lockTetromino()
+	}
 }
 
 // updateScore increases the score based on the number of rows cleared.
 func (g *Game) updateScore(rowsCleared int) {
-	points := map[int]int{
-		1: 100, // Single row
-		2: 300, // Double row
-		3: 500, // Triple row
-		4: 800, // Tetris (4 rows)
+	if points, exists := PointsPerLine[rowsCleared]; exists {
+		g.score += points
 	}
-	g.score += points[rowsCleared]
 }
