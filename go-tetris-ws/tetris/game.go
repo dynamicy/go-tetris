@@ -94,33 +94,6 @@ func (g *Game) Update() error {
 	return nil
 }
 
-// canMove checks if the Tetromino can move without colliding with other blocks.
-func (g *Game) canMove(dx, dy int) bool {
-	for _, pos := range TetrominoShapes[g.currentTetromino.shape] {
-		x, y := g.currentTetromino.x+pos[0]+dx, g.currentTetromino.y+pos[1]+dy
-		if x < 0 || x >= BoardWidth || y >= BoardHeight || (y >= 0 && g.board[y][x]) {
-			return false // Collision detected
-		}
-	}
-	return true
-}
-
-// spawnNewTetromino creates a new Tetromino and checks for game over.
-func (g *Game) spawnNewTetromino() {
-	newTetromino := NewTetromino()
-
-	// Check if the new Tetromino collides immediately (Game Over)
-	for _, pos := range TetrominoShapes[newTetromino.shape] {
-		x, y := newTetromino.x+pos[0], newTetromino.y+pos[1]
-		if y >= 0 && g.board[y][x] {
-			g.gameOver = true
-			return
-		}
-	}
-
-	g.currentTetromino = newTetromino
-}
-
 // updateScore increases the score based on the number of rows cleared.
 func (g *Game) updateScore(rowsCleared int) {
 	points := map[int]int{
