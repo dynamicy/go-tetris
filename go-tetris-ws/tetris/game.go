@@ -14,6 +14,8 @@ type Game struct {
 	lastMoveTime     time.Time
 	lastKeyState     map[ebiten.Key]bool // Track key states
 	score            int
+	linesCleared     int
+	level            int
 	gameOver         bool
 	hardDropActive   bool // Track if Hard Drop is in progress
 }
@@ -121,6 +123,14 @@ func (g *Game) updateScore(rowsCleared int) {
 	if points, exists := PointsPerLine[rowsCleared]; exists {
 		g.score += points
 	}
+
+	// Track total lines cleared
+	g.linesCleared += rowsCleared
+
+	// Increase level every 10 lines
+	if g.linesCleared/10 > g.level {
+		g.level++
+	}
 }
 
 // ResetGame resets the game state, allowing for a fresh start.
@@ -143,24 +153,4 @@ func (g *Game) ResetGame() {
 	g.lastFallTime = time.Now()
 	g.lastMoveTime = time.Now()
 	g.lastKeyState = make(map[ebiten.Key]bool) // Reset key tracking
-}
-
-// updateGhostPiece calculates where the ghost piece should land
-func (g *Game) updateGhostPiece() {
-	if g.currentTetromino == nil {
-		return
-	}
-
-	// Create a new Tetromino for the ghost piece
-	g.ghostTetromino = &Tetromino{
-		shape:         g.currentTetromino.shape,
-		x:             g.currentTetromino.x,
-		y:             g.currentTetromino.y,
-		rotationState: g.currentTetromino.rotationState,
-	}
-
-	// Move the ghost piece down **until it reaches a collision**
-	for g.canMoveTetromino(g.ghostTetromino, 0, 1) {
-		g.ghostTetromino.y++
-	}
 }

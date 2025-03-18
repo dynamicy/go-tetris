@@ -50,6 +50,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	scoreText := fmt.Sprintf("Score: %d", g.score)
 	text.Draw(screen, scoreText, basicfont.Face7x13, 10, 20, color.White)
 
+	// Display Score, Level, and Lines
+	text.Draw(screen, fmt.Sprintf("Score: %d", g.score), basicfont.Face7x13, 10, 20, color.White)
+	text.Draw(screen, fmt.Sprintf("Level: %d", g.level), basicfont.Face7x13, 10, 40, color.White)
+	text.Draw(screen, fmt.Sprintf("Lines: %d", g.linesCleared), basicfont.Face7x13, 10, 60, color.White)
+
 	// Display Game Over and Restart Instructions
 	if g.gameOver {
 		text.Draw(screen, "GAME OVER - Press 'R' to Restart", basicfont.Face7x13, 50, 200, color.RGBA{255, 0, 0, 255})

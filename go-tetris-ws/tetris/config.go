@@ -4,10 +4,10 @@ import "time"
 
 // Constants for the game board
 const (
-	BoardWidth       = 10 // Number of columns
-	BoardHeight      = 20 // Number of rows
-	CellSize         = 30 // Size of each cell in pixels
-	WindowScale      = 1.5
+	BoardWidth  = 10 // Number of columns
+	BoardHeight = 20 // Number of rows
+	CellSize    = 30 // Size of each cell in pixels
+
 	GravityInterval  = 1 * time.Second        // Delay for automatic falling
 	InitialMoveDelay = 100 * time.Millisecond // Delay before repeat
 	MoveRepeatRate   = 30 * time.Millisecond  // Faster movement after holding
