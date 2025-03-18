@@ -70,3 +70,23 @@ func (g *Game) spawnNewTetromino() {
 
 	g.currentTetromino = newTetromino
 }
+
+// updateGhostPiece calculates where the ghost piece should land
+func (g *Game) updateGhostPiece() {
+	if g.currentTetromino == nil {
+		return
+	}
+
+	// Create a new Tetromino for the ghost piece
+	g.ghostTetromino = &Tetromino{
+		shape:         g.currentTetromino.shape,
+		x:             g.currentTetromino.x,
+		y:             g.currentTetromino.y,
+		rotationState: g.currentTetromino.rotationState,
+	}
+
+	// Move the ghost piece down **until it reaches a collision**
+	for g.canMoveTetromino(g.ghostTetromino, 0, 1) {
+		g.ghostTetromino.y++
+	}
+}
