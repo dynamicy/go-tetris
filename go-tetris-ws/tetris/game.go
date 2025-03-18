@@ -8,6 +8,7 @@ import (
 // Game represents the Tetris game state.
 type Game struct {
 	currentTetromino *Tetromino
+	ghostTetromino   *Tetromino // New ghost piece
 	board            [][]bool
 	lastFallTime     time.Time
 	lastMoveTime     time.Time
@@ -41,6 +42,8 @@ func (g *Game) Update() error {
 		}
 		return nil // Prevent input if game is over
 	}
+
+	g.updateGhostPiece() // Ensure ghost is always updated
 
 	currentTime := time.Now()
 
@@ -140,4 +143,24 @@ func (g *Game) ResetGame() {
 	g.lastFallTime = time.Now()
 	g.lastMoveTime = time.Now()
 	g.lastKeyState = make(map[ebiten.Key]bool) // Reset key tracking
+}
+
+// updateGhostPiece calculates where the ghost piece should land
+func (g *Game) updateGhostPiece() {
+	if g.currentTetromino == nil {
+		return
+	}
+
+	// Create a new Tetromino for the ghost piece
+	g.ghostTetromino = &Tetromino{
+		shape:         g.currentTetromino.shape,
+		x:             g.currentTetromino.x,
+		y:             g.currentTetromino.y,
+		rotationState: g.currentTetromino.rotationState,
+	}
+
+	// Move the ghost piece down **until it reaches a collision**
+	for g.canMoveTetromino(g.ghostTetromino, 0, 1) {
+		g.ghostTetromino.y++
+	}
 }

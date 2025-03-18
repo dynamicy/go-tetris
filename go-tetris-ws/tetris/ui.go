@@ -18,10 +18,10 @@ func drawCell(screen *ebiten.Image, x, y int, col color.Color) {
 	screen.DrawImage(cell, op)
 }
 
-// Draw renders the Tetromino correctly after rotation.
-func (t *Tetromino) Draw(screen *ebiten.Image) {
+// Modify Draw function to accept color input
+func (t *Tetromino) Draw(screen *ebiten.Image, col color.RGBA) {
 	for _, pos := range TetrominoRotations[t.shape][t.rotationState] {
-		drawCell(screen, t.x+pos[0], t.y+pos[1], color.RGBA{0, 255, 0, 255}) // Green block
+		drawCell(screen, t.x+pos[0], t.y+pos[1], col)
 	}
 }
 
@@ -36,9 +36,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	// Draw active Tetromino
+	// Draw ghost piece first (semi-transparent)
+	if g.ghostTetromino != nil {
+		g.ghostTetromino.Draw(screen, color.RGBA{100, 100, 100, 100}) // Faded color
+	}
+
+	// Draw actual Tetromino
 	if g.currentTetromino != nil {
-		g.currentTetromino.Draw(screen)
+		g.currentTetromino.Draw(screen, color.RGBA{0, 255, 0, 255})
 	}
 
 	// Display Score

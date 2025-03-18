@@ -114,3 +114,13 @@ func (t *Tetromino) HardDrop(board [][]bool) {
 	}
 }
 
+// canMoveTetromino checks if a given Tetromino can move without collision.
+func (g *Game) canMoveTetromino(t *Tetromino, dx, dy int) bool {
+	for _, pos := range TetrominoRotations[t.shape][t.rotationState] {
+		x, y := t.x+pos[0]+dx, t.y+pos[1]+dy
+		if x < 0 || x >= BoardWidth || y >= BoardHeight || (y >= 0 && g.board[y][x]) {
+			return false // Collision detected
+		}
+	}
+	return true
+}
