@@ -36,6 +36,9 @@ func NewTetrisGame() *Game {
 // Update handles game logic, including movement and rotation.
 func (g *Game) Update() error {
 	if g.gameOver {
+		if ebiten.IsKeyPressed(ebiten.KeyR) {
+			g.ResetGame() // Restart the game
+		}
 		return nil // Prevent input if game is over
 	}
 
@@ -115,4 +118,26 @@ func (g *Game) updateScore(rowsCleared int) {
 	if points, exists := PointsPerLine[rowsCleared]; exists {
 		g.score += points
 	}
+}
+
+// ResetGame resets the game state, allowing for a fresh start.
+func (g *Game) ResetGame() {
+	// Clear the game board
+	g.board = make([][]bool, BoardHeight)
+	for i := range g.board {
+		g.board[i] = make([]bool, BoardWidth)
+	}
+
+	// Reset score and game status
+	g.score = 0
+	g.gameOver = false
+	g.hardDropActive = false
+
+	// Spawn a new Tetromino
+	g.currentTetromino = NewTetromino()
+
+	// Reset timing variables
+	g.lastFallTime = time.Now()
+	g.lastMoveTime = time.Now()
+	g.lastKeyState = make(map[ebiten.Key]bool) // Reset key tracking
 }
