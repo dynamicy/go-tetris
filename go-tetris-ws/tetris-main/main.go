@@ -12,7 +12,7 @@ func main() {
 	game := tetris.NewTetrisGame() // Method renamed to `NewTetrisGame()`
 
 	// Set up the game window
-	ebiten.SetWindowSize(320, 480)
+	ebiten.SetWindowSize(tetris.BoardWidth*tetris.CellSize, tetris.BoardHeight*tetris.CellSize)
 	ebiten.SetWindowTitle("Tetris in Go")
 
 	// Run the game loop
